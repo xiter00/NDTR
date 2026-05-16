@@ -1,0 +1,54 @@
+name: Compile ESP32-S3 Firmware
+
+# Trigger workflow kalau ada push ke branch main atau dijalankan manual
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+        with:
+          version: "latest"
+
+      - name: Install ESP32 Core
+        run: |
+          arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+      - name: Install Libraries
+        run: |
+          # Install library resmi dari Arduino Library Manager
+          arduino-cli lib install "ArduinoJson"
+          arduino-cli lib install "UniversalTelegramBot"
+          
+          # Clone manual AsyncTCP dan ESPAsyncWebServer ke folder library Arduino
+          mkdir -p $HOME/Arduino/libraries
+          cd $HOME/Arduino/libraries
+          git clone https://github.com/me-no-dev/AsyncTCP.git
+          git clone https://github.com/me-no-dev/ESPAsyncWebServer.git
+
+      - name: Compile Sketch
+        run: |
+          # Compile dengan parameter khusus ESP32-S3 N16R8 (Flash 16MB, OPI PSRAM)
+          # Ganti "ESP32_Pro_Control" sesuai nama folder dan file .ino lo
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi \
+            --export-binaries \
+            ./FMW
+
+      - name: Upload Firmware Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DetonatorNewFirmware
+          # Upload semua file .bin hasil compile
+          path: ./FMW/build/**/*.bin
+          retention-days: 7
