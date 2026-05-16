@@ -112,7 +112,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     </div>
 
     <div class="card">
-      <h3>Local AP Settings (8.8.8.8)</h3>
+      <h3>Local AP Settings</h3>
       <div class="form-group">
         <label>New AP Name</label>
         <input type="text" id="ap_ssid" placeholder="ESP32_Network">
@@ -265,8 +265,8 @@ void setup() {
 
   // 2. Setup Access Point (Target IP: 8.8.8.8)
   WiFi.mode(WIFI_AP_STA);
-  IPAddress local_IP(8, 8, 8, 8);
-  IPAddress gateway(8, 8, 8, 8);
+  IPAddress local_IP(1, 9, 5, 5);
+  IPAddress gateway(1, 9, 5, 5);
   IPAddress subnet(255, 255, 255, 0);
   
   WiFi.softAPConfig(local_IP, gateway, subnet);
