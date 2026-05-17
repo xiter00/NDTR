@@ -39,6 +39,26 @@ jobs:
           cd $HOME/Arduino/libraries
           git clone https://github.com/me-no-dev/AsyncTCP.git
           git clone https://github.com/me-no-dev/ESPAsyncWebServer.git
+        
+      - name: Auto Convert MJPEG to Hex Array (Anti Freeze HP)
+        run: |
+          python3 -c "
+          import os
+          file_path = 'data/video.mjpeg'
+          if os.path.exists(file_path):
+              with open(file_path, 'rb') as f:
+                  data = f.read()
+              chunks = [', '.join([f'0x{b:02x}' for b in data[i:i+16]]) for i in range(0, len(data), 16)]
+              hex_content = ',\n'.join(chunks)
+              with open('video_data.h', 'w') as f:
+                  f.write('#include <pgmspace.h>\n')
+                  f.write('static const unsigned char video_mjpeg[] PROGMEM = {\n' + hex_content + '\n};\n')
+                  f.write(f'static const uint32_t video_size = {len(data)};\n')
+              print('Sukses convert video ke Hex lewat server GitHub!')
+          else:
+              print('File video.mjpeg tidak ditemukan di folder data!')
+          "
+          
 
       - name: Compile Sketch
         run: |
@@ -52,7 +72,7 @@ jobs:
       - name: Upload Firmware Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DetonatorNewFirmware
+          name: IPSTestFirmware
           # Upload semua file .bin hasil compile
           path: ./IPS1/build/**/*.bin
           retention-days: 7
