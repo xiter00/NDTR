@@ -62,10 +62,9 @@ jobs:
 
       - name: Compile Sketch
         run: |
-          # Compile dengan parameter khusus ESP32-S3 N16R8 (Flash 16MB, OPI PSRAM)
-          # Ganti "ESP32_Pro_Control" sesuai nama folder dan file .ino lo
+          # Compile dengan parameter khusus ESP32-S3 N16R8 (Flash 16MB, OPI PSRAM, Jatah App 14MB)
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi \
+            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=no_ota_14MB,PSRAM=opi \
             --export-binaries \
             ./IPS1
 
