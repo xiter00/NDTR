@@ -73,10 +73,9 @@ jobs:
 
       - name: Compile Sketch
         run: |
-          # Balikin ke FQBN standar yang udah pasti valid (Tanpa parameter PartitionScheme yang bikin error)
-          # Ukuran partisi otomatis di-override jadi 13MB lewat file partitions.csv di atas!
+          # SAKTI: Tambahin PartitionScheme=custom biar dia dipaksa baca partitions.csv di folder IPS1!
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi \
+            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=custom,PSRAM=opi \
             --export-binaries \
             ./IPS1
 
