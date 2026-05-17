@@ -90,14 +90,6 @@ void setup() {
   tft.fillScreen(ST77XX_BLACK);
 
   // Inisialisasi LittleFS
-  if (!LittleFS.begin(true)) {
-    Serial.println("Gagal memuat LittleFS!");
-    tft.setTextSize(2);
-    tft.setTextColor(ST77XX_RED);
-    tft.setCursor(10, 100);
-    tft.print("FS ERROR!");
-    while (1) delay(1000);
-  }
 
   // Konfigurasi Decoder JPEG
   TJpgDec.setJpgScale(1);
