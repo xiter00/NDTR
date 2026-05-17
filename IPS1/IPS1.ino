@@ -21,60 +21,54 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) 
 }
 
 // ========================================================
-// FUNGSI DEWA: EFEK CYBERPUNK GLITCH TEKS SEGEDE GABAN
+// FUNGSI DEWA: EFEK CYBERPUNK GLITCH (VERSI LANDSCAPE/TIDUR)
 // ========================================================
 void tampilkanGlitchAngka(int angka) {
   unsigned long waktuMulai = millis();
   char stringAngka[2];
   sprintf(stringAngka, "%d", angka);
 
-  // Jalankan animasi glitch selama 1 detik (1000ms) per angka
   while (millis() - waktuMulai < 1000) {
-    
-    // 1. Gambar garis statis/glitch horizontal secara acak di layar
-    int yGaris = random(0, 240);
-    int hGaris = random(2, 10); // ketebalan garis acak
+    // 1. Garis glitch sekarang panjangnya 240, tingginya ngacak sampai 135
+    int yGaris = random(0, 135); 
+    int hGaris = random(2, 10);
     uint16_t warnaGaris = (random(0, 2) == 0) ? ST77XX_CYAN : ST77XX_MAGENTA;
-    tft.fillRect(0, yGaris, 135, hGaris, warnaGaris);
+    tft.fillRect(0, yGaris, 240, hGaris, warnaGaris);
 
-    // 2. Efek Chromatic Aberration (Teks bayangan bergeser acak)
     int offsetX = random(-5, 6);
     int offsetY = random(-3, 4);
 
-    tft.setTextSize(9); // UKURAN SEGEDE GABAN! (Skala 9)
+    tft.setTextSize(9); // Tinggi font ~72px
 
-    // Cetak Bayangan Cyan (Geser Kiri/Atas)
+    // Kordinat Center buat Landscape (X: 95, Y: 30)
     tft.setTextColor(ST77XX_CYAN);
-    tft.setCursor(45 + offsetX, 85 + offsetY);
+    tft.setCursor(95 + offsetX, 30 + offsetY);
     tft.print(stringAngka);
 
-    // Cetak Bayangan Magenta (Geser Kanan/Bawah)
     tft.setTextColor(ST77XX_MAGENTA);
-    tft.setCursor(45 - offsetX, 85 - offsetY);
+    tft.setCursor(95 - offsetX, 30 - offsetY);
     tft.print(stringAngka);
 
-    // Cetak Teks Utama Warna Putih di Tengah
     tft.setTextColor(ST77XX_WHITE);
-    tft.setCursor(45, 85);
+    tft.setCursor(95, 30);
     tft.print(stringAngka);
 
-    delay(40); // Kecepatan kedipan glitch (makin kecil makin cepet/liar)
+    delay(40);
 
-    // 3. Clear layar acak biar efek kedip rusaknya dapet
     if (random(0, 10) > 6) {
       tft.fillScreen(ST77XX_BLACK);
     }
   }
-  // Clear total sebelum masuk ke angka berikutnya
   tft.fillScreen(ST77XX_BLACK);
 }
+
 
 void setup() {
   Serial.begin(115200);
 
   // Inisialisasi Layar IPS ST7789 (135x240)
   tft.init(135, 240);
-  tft.setRotation(0); // Tegak (Portrait)
+  tft.setRotation(1); // Tegak (Portrait)
   tft.fillScreen(ST77XX_BLACK);
 
   // --------------------------------------------------------
@@ -114,7 +108,7 @@ void loop() {
           // Render gambar ke layar
           TJpgDec.drawJpg(0, 0, video_mjpeg + start_mcu, frame_size);
           
-          delay(30); // FPS Video
+          
           break; 
         }
         index++;
