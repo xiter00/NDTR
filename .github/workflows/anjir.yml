@@ -44,7 +44,7 @@ jobs:
         run: |
           python3 -c "
           import os
-          file_path = 'data/video.mjpeg'
+          file_path = 'IPS1/data/video.mjpeg'
           if os.path.exists(file_path):
               with open(file_path, 'rb') as f:
                   data = f.read()
