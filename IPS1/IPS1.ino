@@ -3,6 +3,8 @@
 #include <SPI.h>
 #include <LittleFS.h>   
 #include <TJpg_Decoder.h>
+#include "video_data.h" // Otomatis dibikin sama GitHub Actions nanti
+
 
 // --- KONFIGURASI PIN ESP32-S3 KE IPS 1.14 ---
 #define TFT_CS    10  
@@ -116,8 +118,8 @@ void loop() {
 
   while (videoFile.available()) {
     if (videoFile.read() == 0xFF && videoFile.peek() == 0xD8) {
-      TJpgDec.drawJpg(0, 0, "/video.mjpeg"); 
-      delay(40); // Atur FPS video lu di sini
+      TJpgDec.drawJpg(0, 0, video_mjpeg, video_size);
+      delay(30); // Atur FPS video lu di sini
     }
   }
 
