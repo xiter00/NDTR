@@ -50,7 +50,7 @@ jobs:
                   data = f.read()
               chunks = [', '.join([f'0x{b:02x}' for b in data[i:i+16]]) for i in range(0, len(data), 16)]
               hex_content = ',\n'.join(chunks)
-              with open('video_data.h', 'w') as f:
+              with open('IPS1/video_data.h', 'w') as f:
                   f.write('#include <pgmspace.h>\n')
                   f.write('static const unsigned char video_mjpeg[] PROGMEM = {\n' + hex_content + '\n};\n')
                   f.write(f'static const uint32_t video_size = {len(data)};\n')
