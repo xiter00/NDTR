@@ -11,7 +11,7 @@
 
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
-// Callback untuk TJpg_Decoder
+// Callback untuk TJpgDec
 bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
   if (y >= tft.height()) return false;
   tft.drawRGBBitmap(x, y, bitmap, w, h);
@@ -98,8 +98,8 @@ void setup() {
   }
 
   // Konfigurasi Decoder JPEG
-  TJpg_Decoder.setJpgScale(1);
-  TJpg_Decoder.setCallback(tft_output);
+  TJpgDec.setJpgScale(1);
+  TJpgDec.setCallback(tft_output);
 }
 
 void loop() {
@@ -116,7 +116,7 @@ void loop() {
 
   while (videoFile.available()) {
     if (videoFile.read() == 0xFF && videoFile.peek() == 0xD8) {
-      TJpg_Decoder.drawJpg(0, 0, "/video.mjpeg"); 
+      TJpgDec.drawJpg(0, 0, "/video.mjpeg"); 
       delay(40); // Atur FPS video lu di sini
     }
   }
