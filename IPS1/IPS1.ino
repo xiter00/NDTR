@@ -95,27 +95,32 @@ void setup() {
   TJpgDec.setJpgScale(1);
   TJpgDec.setCallback(tft_output);
 }
-
 void loop() {
-  File videoFile = LittleFS.open("/video.mjpeg", "r");
+  uint32_t index = 0;
   
-  if (!videoFile) {
-    tft.setTextSize(2);
-    tft.setTextColor(ST77XX_RED);
-    tft.setCursor(10, 100);
-    tft.print("NO VIDEO!");
-    delay(5000);
-    return;
-  }
+  // Mesin pencari frame video langsung dari Hex Array
+  while (index < video_size - 1) {
+    // Cari header JPEG (0xFF 0xD8)
+    if (video_mjpeg[index] == 0xFF && video_mjpeg[index + 1] == 0xD8) {
+      uint32_t start_mcu = index;
+      index += 2;
+      
+      // Cari footer JPEG (0xFF 0xD9)
+      while (index < video_size - 1) {
+        if (video_mjpeg[index] == 0xFF && video_mjpeg[index + 1] == 0xD9) {
+          uint32_t end_mcu = index + 1;
+          uint32_t frame_size = end_mcu - start_mcu + 1;
 
-  while (videoFile.available()) {
-    if (videoFile.read() == 0xFF && videoFile.peek() == 0xD8) {
-      TJpgDec.drawJpg(0, 0, video_mjpeg, video_size);
-      delay(30); // Atur FPS video lu di sini
+          // Render gambar ke layar
+          TJpgDec.drawJpg(0, 0, video_mjpeg + start_mcu, frame_size);
+          
+          delay(30); // FPS Video
+          break; 
+        }
+        index++;
+      }
+    } else {
+      index++;
     }
   }
-
-  videoFile.close();
-  tft.fillScreen(ST77XX_BLACK);
-  delay(500); 
 }
