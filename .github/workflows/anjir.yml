@@ -17,18 +17,22 @@ jobs:
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v2
         with:
-          version: "1.0.4"
+          version: "latest"
 
       - name: Install ESP32 Core
         run: |
           arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
           arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 
-      - name: Install Libraries
+            - name: Install Libraries
         run: |
           # Install library resmi dari Arduino Library Manager
           arduino-cli lib install "ArduinoJson"
           arduino-cli lib install "UniversalTelegramBot"
+          arduino-cli lib install "Adafruit GFX Library"
+          arduino-cli lib install "Adafruit ST7735 and ST7789 Library"
+          arduino-cli lib install "TJpg_Decoder"
+          arduino-cli lib install "AnimatedGIF"
           
           # Clone manual AsyncTCP dan ESPAsyncWebServer ke folder library Arduino
           mkdir -p $HOME/Arduino/libraries
@@ -43,12 +47,12 @@ jobs:
           arduino-cli compile \
             --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi \
             --export-binaries \
-            ./FMW
+            ./IPS1
 
       - name: Upload Firmware Artifact
         uses: actions/upload-artifact@v4
         with:
           name: DetonatorNewFirmware
           # Upload semua file .bin hasil compile
-          path: ./FMW/build/**/*.bin
+          path: ./IPS1/build/**/*.bin
           retention-days: 7
