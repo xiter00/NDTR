@@ -42,7 +42,7 @@ jobs:
         
 
 
-            - name: Compile Sketch
+      - name: Compile Sketch
         run: |
           # FQBN Standar lu digabung ama RACIKAN BEAST MODE (CPUFreq=240, FlashFreq=80, FlashMode=qio, CDCOnBoot=cdc)
           # Ukuran partisi tetap otomatis di-override lewat file partitions.csv lu!
