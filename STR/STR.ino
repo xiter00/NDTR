@@ -64,53 +64,58 @@ void loop() {
   // Kalau belum konek ke IP APK, paksa konek!
   if (!client.connected()) {
     if (client.connect(host, port)) {
-      // Minta jalur stream ke APK (Cek path di APK lu, kadang /stream.mjpeg)
       client.print(String("GET /stream.mjpeg HTTP/1.1\r\n") +
                    "Host: " + host + "\r\n" +
                    "Connection: keep-alive\r\n\r\n");
     } else {
-      delay(500);
+      delay(100); // Gak usah kelamaan delay-nya biar cepet reconnect
       return;
     }
   }
 
-  // --- MESIN PENYEDOT FRAME (REVISI DEWA) ---
-  // Pake static biar datanya gak ilang pas ESP32 ngambil napas
+  // --- MESIN PENYEDOT CHUNKS (ANTI-BEGO VERSION) ---
   static uint32_t bufIdx = 0;
   static bool isFrame = false;
   static uint8_t prevByte = 0;
+  
+  #define CHUNK_SIZE 4096
+  static uint8_t chunkBuffer[CHUNK_SIZE]; // Buffer penampung sementara dari WiFi
 
-  // Sedot data selama ada yang dikirim dari HP
-  while (client.available()) {
-    uint8_t c = client.read();
-    
-    if (!isFrame) {
-      // Nyari kode Awal Gambar JPEG (0xFF 0xD8)
-      if (prevByte == 0xFF && c == 0xD8) {
-        isFrame = true;
-        bufIdx = 0;
-        frameBuffer[bufIdx++] = 0xFF;
-        frameBuffer[bufIdx++] = 0xD8;
+  int availableBytes = client.available();
+  if (availableBytes > 0) {
+    // Ambil data dalam bentuk blok/chunks, jangan eceran per byte!
+    int bytesToRead = min(availableBytes, CHUNK_SIZE);
+    int readBytes = client.read(chunkBuffer, bytesToRead);
+
+    // Scan data yang udah di dalam RAM (Ini secepat kilat)
+    for (int i = 0; i < readBytes; i++) {
+      uint8_t c = chunkBuffer[i];
+
+      if (!isFrame) {
+        if (prevByte == 0xFF && c == 0xD8) {
+          isFrame = true;
+          bufIdx = 0;
+          frameBuffer[bufIdx++] = 0xFF;
+          frameBuffer[bufIdx++] = 0xD8;
+        }
+      } else {
+        if (bufIdx < 80000) { // Proteksi memori 60KB
+          frameBuffer[bufIdx++] = c;
+        } else {
+          isFrame = false;
+          bufIdx = 0;
+        }
+
+        if (prevByte == 0xFF && c == 0xD9 && isFrame) {
+          // BANTING LANGSUNG KE LAYAR
+          TJpgDec.setJpgScale(1); // Kualitas 100% murni tanpa disunat
+          TJpgDec.drawJpg(0, 0, frameBuffer, bufIdx);
+          
+          isFrame = false;
+          bufIdx = 0;
+        }
       }
-    } else {
-      // Simpen ke memori
-      frameBuffer[bufIdx++] = c;
-      
-      // Nyari kode Akhir Gambar JPEG (0xFF 0xD9)
-      if (prevByte == 0xFF && c == 0xD9) {
-        // BANTING KE LAYAR IPS!
-        TJpgDec.drawJpg(0, 0, frameBuffer, bufIdx);
-        
-        // Reset buat nangkep frame gambar selanjutnya
-        isFrame = false;
-        bufIdx = 0;
-      } 
-      // Kalo ukuran gambar ternyata lebih dari 30KB (kebesaran), buang!
-      else if (bufIdx >= sizeof(frameBuffer)) {
-        isFrame = false;
-        bufIdx = 0;
-      }
+      prevByte = c;
     }
-    prevByte = c; // Inget byte sebelumnya
   }
 }
