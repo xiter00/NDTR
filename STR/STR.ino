@@ -30,6 +30,7 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) 
 }
 
 void setup() {
+  delay(3000);
   // Paksa pake HW Serial bawaan USB S3
   Serial.begin(115200); 
   
