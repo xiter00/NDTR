@@ -18,7 +18,7 @@ int port = 8080;
 #define TFT_RST   8
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
-// FIX: Buffer digedein jadi 80KB biar gak crash pas kirim kualitas 100%
+// Buffer digedein jadi 150KB biar gak crash pas kirim kualitas 100%
 uint8_t frameBuffer[150000]; 
 WiFiClient client;
 
@@ -41,11 +41,9 @@ void setup() {
   }
   
   Serial.println("\n[OK] SISTEM SIAP!");
-  // ... sisa kodingan wifi dan layar ke bawah
 
   // Setup Layar
   tft.init(135, 240);
-  tft.setRotation(1); // Miring / Landscape
   tft.fillScreen(ST77XX_BLACK);
   
   TJpgDec.setJpgScale(1);
@@ -86,12 +84,12 @@ void setup() {
   Serial.println("Contoh: 192.168.137.193");
   Serial.println("=====================================");
   
-  while (Serial.available() > 0) Serial.read(); // Bersihin sisa buffer serial
+  while (Serial.available() > 0) Serial.read(); 
   while (!Serial.available()) {
-    delay(10); // Nungguin lu ngetik IP
+    delay(10); 
   }
   host = Serial.readStringUntil('\n');
-  host.trim(); // Buang spasi atau enter gaib (\r)
+  host.trim(); 
   
   Serial.print("-> IP Diterima: ");
   Serial.println(host);
@@ -100,15 +98,15 @@ void setup() {
   Serial.println("\n=====================================");
   Serial.println("Masukkan Port-nya (Ketik angkanya aja):");
   Serial.println("Contoh: 8080");
-  Serial.println("=====================================");
+  =====================================");
   
-  while (Serial.available() > 0) Serial.read(); // Bersihin sisa buffer lagi
+  while (Serial.available() > 0) Serial.read(); 
   while (!Serial.available()) {
-    delay(10); // Nungguin lu ngetik Port
+    delay(10); 
   }
   String portStr = Serial.readStringUntil('\n');
   portStr.trim();
-  port = portStr.toInt(); // Ubah tulisan jadi angka integer
+  port = portStr.toInt(); 
   
   Serial.print("-> Port Diterima: ");
   Serial.println(port);
@@ -119,9 +117,8 @@ void setup() {
 }
 
 void loop() {
-  // Kalau belum konek ke IP APK yang lu input tadi, paksa konek!
   if (!client.connected()) {
-    if (client.connect(host.c_str(), port)) { // .c_str() dipake buat ngubah String ke array char
+    if (client.connect(host.c_str(), port)) { 
       client.print(String("GET /stream.mjpeg HTTP/1.1\r\n") +
                    "Host: " + host + "\r\n" +
                    "Connection: keep-alive\r\n\r\n");
@@ -163,8 +160,37 @@ void loop() {
         }
 
         if (prevByte == 0xFF && c == 0xD9 && isFrame) {
+          
+          // ====================================================
+          // 🔥 DISINI LOGIKA DEWA AUTO-ROTATENYA GUE DEKLARE 🔥
+          // ====================================================
+          uint16_t jpg_w = 0, jpg_h = 0;
+          // Ngintip isi kepala file JPEG buat nyari tahu ukuran aslinya
+          TJpgDec.getJpgSize(&jpg_w, &jpg_h, frameBuffer, bufIdx);
+          
+          static uint8_t rotasiLama = 99;
+          uint8_t rotasiTarget = 1; // Default miring (Landscape)
+          
+          if (jpg_w < jpg_h) {
+            rotasiTarget = 0; // HP Tegak -> Layar IPS ikut diputar Tegak (Portrait)
+          } else {
+            rotasiTarget = 1; // HP Miring -> Layar IPS ikut diputar Miring (Landscape)
+          }
+          
+          // Kalau posisi HP berubah, reset arah layar & bersihin sisa gambar lama
+          if (rotasiTarget != rotasiLama) {
+            tft.setRotation(rotasiTarget);
+            tft.fillScreen(ST77XX_BLACK); 
+            rotasiLama = rotasiTarget;
+          }
+          // ====================================================
+
           TJpgDec.setJpgScale(1); 
+          
+          // BONUS OPTIMASI: Jalur kabel dikunci biar render anime-nya makin kebut rata kanan
+          tft.startWrite();
           TJpgDec.drawJpg(0, 0, frameBuffer, bufIdx);
+          tft.endWrite();
           
           isFrame = false;
           bufIdx = 0;
