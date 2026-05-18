@@ -40,51 +40,23 @@ jobs:
           git clone https://github.com/me-no-dev/AsyncTCP.git
           git clone https://github.com/me-no-dev/ESPAsyncWebServer.git
         
-      - name: Auto Convert MJPEG to Hex & Create Custom Partition (Anti-Error)
-        run: |
-          python3 -c "
-          import os
-          file_path = 'IPS1/data/video.mjpeg'
-          if os.path.exists(file_path):
-              with open(file_path, 'rb') as f:
-                  data = f.read()
-              chunks = [', '.join([f'0x{b:02x}' for b in data[i:i+16]]) for i in range(0, len(data), 16)]
-              hex_content = ',\n'.join(chunks)
-              
-              # Bikin folder IPS1 kalau belum ada
-              os.makedirs('IPS1', exist_ok=True)
-              
-              # 1. Tulis file video_data.h di dalam folder IPS1
-              with open('IPS1/video_data.h', 'w') as f:
-                  f.write('#include <pgmspace.h>\nstatic const unsigned char video_mjpeg[] PROGMEM = {\n' + hex_content + '\n};\nstatic const uint32_t video_size = ' + str(len(data)) + ';\n')
-              
-              # 2. Bikin file partitions.csv CUSTOM (Jatah APP 13MB tanpa OTA, Auto-Override)
-              with open('IPS1/partitions.csv', 'w') as f:
-                  f.write('# Name,   Type, SubType, Offset,  Size, Flags\n')
-                  f.write('nvs,      data, nvs,     0x9000,  0x5000,\n')
-                  f.write('phy_init, data, phy,     0xe000,  0x1000,\n')
-                  f.write('app0,     app,  factory, 0x10000, 0xD00000,\n')
-                  f.write('ffat,     data, fat,     0xD10000,0x2F0000,\n')
-                  
-              print('SUKSES: video_data.h dan partitions.csv sukses dibuat di folder IPS1, Cok!')
-          else:
-              print('ERROR: File data/video.mjpeg tidak ditemukan!')
-          "
+
 
       - name: Compile Sketch
         run: |
-          # SAKTI: Tambahin PartitionScheme=custom biar dia dipaksa baca partitions.csv di folder IPS1!
+          # Balikin ke FQBN standar yang udah pasti valid (Tanpa parameter PartitionScheme yang bikin error)
+          # Ukuran partisi otomatis di-override jadi 13MB lewat file partitions.csv di atas!
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=custom,PSRAM=opi \
+            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi \
             --export-binaries \
-            ./IPS1
+            ./STR
 
            
 
       - name: Upload Firmware Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IPSTestFirmware
+          name: IPSStreamFirmware
           # Upload semua file .bin hasil compile
-          path: ./IPS1/build/**/*.bin
+          path: ./STR/build/**/*.bin
           retention-days: 7
