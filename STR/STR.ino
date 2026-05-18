@@ -19,7 +19,7 @@ int port = 8080;
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
 // FIX: Buffer digedein jadi 80KB biar gak crash pas kirim kualitas 100%
-uint8_t frameBuffer[80000]; 
+uint8_t frameBuffer[150000]; 
 WiFiClient client;
 
 // Callback buat nampilin gambar ke layar
@@ -154,7 +154,7 @@ void loop() {
           frameBuffer[bufIdx++] = 0xD8;
         }
       } else {
-        if (bufIdx < 80000) { 
+        if (bufIdx < 150000) { 
           frameBuffer[bufIdx++] = c;
         } else {
           isFrame = false;
