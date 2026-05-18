@@ -47,7 +47,7 @@ jobs:
           # FQBN Standar lu digabung ama RACIKAN BEAST MODE (CPUFreq=240, FlashFreq=80, FlashMode=qio, CDCOnBoot=cdc)
           # Ukuran partisi tetap otomatis di-override lewat file partitions.csv lu!
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi,CPUFreq=240,FlashFreq=80,FlashMode=dio,CDCOnBoot=cdc \
+            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi,CPUFreq=240,FlashMode=dio,CDCOnBoot=cdc \
             --export-binaries \
             ./STR
 
