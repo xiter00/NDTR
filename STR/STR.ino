@@ -64,7 +64,7 @@ void loop() {
   // Kalau belum konek ke IP APK, paksa konek!
   if (!client.connected()) {
     if (client.connect(host, port)) {
-      // Minta jalur stream ke APK (Biasanya path-nya /stream.mjpeg atau /)
+      // Minta jalur stream ke APK (Cek path di APK lu, kadang /stream.mjpeg)
       client.print(String("GET /stream.mjpeg HTTP/1.1\r\n") +
                    "Host: " + host + "\r\n" +
                    "Connection: keep-alive\r\n\r\n");
@@ -74,39 +74,43 @@ void loop() {
     }
   }
 
-  // --- MESIN PENYEDOT FRAME (MJPEG) ---
-  // ESP32 bakal nyari kode 0xFF 0xD8 (Awal Gambar) dan 0xFF 0xD9 (Akhir Gambar)
-  if (client.available()) {
-    uint32_t bufIdx = 0;
-    bool isFrame = false;
+  // --- MESIN PENYEDOT FRAME (REVISI DEWA) ---
+  // Pake static biar datanya gak ilang pas ESP32 ngambil napas
+  static uint32_t bufIdx = 0;
+  static bool isFrame = false;
+  static uint8_t prevByte = 0;
+
+  // Sedot data selama ada yang dikirim dari HP
+  while (client.available()) {
+    uint8_t c = client.read();
     
-    while (client.available()) {
-      uint8_t c = client.read();
-      
-      // Deteksi Header JPEG
-      if (bufIdx > 0 && frameBuffer[bufIdx-1] == 0xFF && c == 0xD8) {
+    if (!isFrame) {
+      // Nyari kode Awal Gambar JPEG (0xFF 0xD8)
+      if (prevByte == 0xFF && c == 0xD8) {
         isFrame = true;
-        bufIdx = 1;
-        frameBuffer[0] = 0xFF;
-        frameBuffer[1] = 0xD8;
-        continue;
+        bufIdx = 0;
+        frameBuffer[bufIdx++] = 0xFF;
+        frameBuffer[bufIdx++] = 0xD8;
       }
+    } else {
+      // Simpen ke memori
+      frameBuffer[bufIdx++] = c;
       
-      if (isFrame) {
-        frameBuffer[bufIdx++] = c;
+      // Nyari kode Akhir Gambar JPEG (0xFF 0xD9)
+      if (prevByte == 0xFF && c == 0xD9) {
+        // BANTING KE LAYAR IPS!
+        TJpgDec.drawJpg(0, 0, frameBuffer, bufIdx);
         
-        // Deteksi Footer JPEG (Gambar Selesai)
-        if (bufIdx > 1 && frameBuffer[bufIdx-2] == 0xFF && frameBuffer[bufIdx-1] == 0xD9) {
-          // Render ke layar IPS!
-          TJpgDec.drawJpg(0, 0, frameBuffer, bufIdx);
-          break; // Keluar dari loop, siap nerima frame berikutnya
-        }
-        
-        // Anti-Crash kalau ukuran gambar kebesaran
-        if (bufIdx >= sizeof(frameBuffer)) {
-          break; 
-        }
+        // Reset buat nangkep frame gambar selanjutnya
+        isFrame = false;
+        bufIdx = 0;
+      } 
+      // Kalo ukuran gambar ternyata lebih dari 30KB (kebesaran), buang!
+      else if (bufIdx >= sizeof(frameBuffer)) {
+        isFrame = false;
+        bufIdx = 0;
       }
     }
+    prevByte = c; // Inget byte sebelumnya
   }
 }
