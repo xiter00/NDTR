@@ -69,7 +69,7 @@ jobs:
               print('ERROR: File data/video.mjpeg tidak ditemukan!')
           "
 
-        - name: Compile Sketch
+       - name: Compile Sketch
         run: |
           # FQBN Racikan N16R8 + Injeksi settingan layar TFT_eSPI 
           # Ditambah pemaksaan upload.maximum_size agar compiler tidak error melihat file 12MB+
