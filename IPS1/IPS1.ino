@@ -2,7 +2,8 @@
 #include <SPI.h>
 #include <LittleFS.h>   
 #include <TJpg_Decoder.h>
-#include <esp_partition.h> // API native ESP32 untuk baca memory
+#include <esp_partition.h> 
+#include <spi_flash_mmap.h> // ---> INI OBATNYA (Header khusus untuk mmap di ESP32 Core v3.x)
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -58,7 +59,7 @@ void setup() {
   Serial.begin(115200);
 
   tft.init();
-  tft.setRotation(3);
+  tft.setRotation(1);
   tft.fillScreen(TFT_BLACK);
 
   tampilkanGlitchAngka(3); 
@@ -73,7 +74,7 @@ void setup() {
   TJpgDec.setSwapBytes(true); 
   TJpgDec.setCallback(tft_output);
 
-  // --- MAPPING VIDEO DARI PARTISI FLASH (TANPA BIKIN RAM CRASH) ---
+  // --- MAPPING VIDEO DARI PARTISI FLASH ---
   const esp_partition_t* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "video");
   if (part != nullptr) {
     video_size = part->size;
