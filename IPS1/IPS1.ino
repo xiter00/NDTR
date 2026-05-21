@@ -3,7 +3,6 @@
 #include <LittleFS.h>   
 #include <TJpg_Decoder.h>
 #include <esp_partition.h> 
-#include <spi_flash_mmap.h> // ---> INI OBATNYA (Header khusus untuk mmap di ESP32 Core v3.x)
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -16,7 +15,9 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) 
 // Pointer & ukuran video map
 const uint8_t* video_mjpeg = nullptr;
 uint32_t video_size = 0;
-spi_flash_mmap_handle_t mmap_handle;
+
+// ---> NAMA BARU UNTUK CORE 3.x
+esp_partition_mmap_handle_t mmap_handle; 
 
 // ========================================================
 // FUNGSI GLITCH
@@ -78,7 +79,9 @@ void setup() {
   const esp_partition_t* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "video");
   if (part != nullptr) {
     video_size = part->size;
-    esp_partition_mmap(part, 0, video_size, SPI_FLASH_MMAP_DATA, (const void**)&video_mjpeg, &mmap_handle);
+    
+    // ---> MENGGUNAKAN ESP_PARTITION_MMAP_DATA UNTUK CORE 3.x
+    esp_partition_mmap(part, 0, video_size, ESP_PARTITION_MMAP_DATA, (const void**)&video_mjpeg, &mmap_handle);
     Serial.println("SUKSES: Video ditemukan dan di-map ke RAM!");
   } else {
     Serial.println("ERROR: Partisi video tidak ditemukan!");
