@@ -1,22 +1,18 @@
-#include <Adafruit_GFX.h>
-#include <Adafruit_ST7789.h>
+#include <TFT_eSPI.h>
 #include <SPI.h>
 #include <LittleFS.h>   
 #include <TJpg_Decoder.h>
-#include "video_data.h" // Otomatis dibikin sama GitHub Actions nanti
+#include "video_data.h" // Otomatis dibikin sama GitHub Actions
 
-
-// --- KONFIGURASI PIN ESP32-S3 KE IPS 1.14 ---
-#define TFT_CS    10  
-#define TFT_DC    9  
-#define TFT_RST   8
-
-Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
+// TFT_eSPI instance (Pin CS, DC, RST disetting langsung dari GitHub Actions)
+TFT_eSPI tft = TFT_eSPI();
 
 // Callback untuk TJpgDec
 bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
   if (y >= tft.height()) return false;
-  tft.drawRGBBitmap(x, y, bitmap, w, h);
+  
+  // pushImage adalah kunci utama 30FPS di TFT_eSPI, jauh lebih cepat dari drawRGBBitmap
+  tft.pushImage(x, y, w, h, bitmap);
   return true;
 }
 
@@ -29,10 +25,9 @@ void tampilkanGlitchAngka(int angka) {
   sprintf(stringAngka, "%d", angka);
 
   while (millis() - waktuMulai < 1000) {
-    // 1. Garis glitch sekarang panjangnya 240, tingginya ngacak sampai 135
     int yGaris = random(0, 135); 
     int hGaris = random(2, 10);
-    uint16_t warnaGaris = (random(0, 2) == 0) ? ST77XX_CYAN : ST77XX_MAGENTA;
+    uint16_t warnaGaris = (random(0, 2) == 0) ? TFT_CYAN : TFT_MAGENTA;
     tft.fillRect(0, yGaris, 240, hGaris, warnaGaris);
 
     int offsetX = random(-5, 6);
@@ -40,66 +35,61 @@ void tampilkanGlitchAngka(int angka) {
 
     tft.setTextSize(9); // Tinggi font ~72px
 
-    // Kordinat Center buat Landscape (X: 95, Y: 30)
-    tft.setTextColor(ST77XX_CYAN);
+    tft.setTextColor(TFT_CYAN);
     tft.setCursor(95 + offsetX, 30 + offsetY);
     tft.print(stringAngka);
 
-    tft.setTextColor(ST77XX_MAGENTA);
+    tft.setTextColor(TFT_MAGENTA);
     tft.setCursor(95 - offsetX, 30 - offsetY);
     tft.print(stringAngka);
 
-    tft.setTextColor(ST77XX_WHITE);
+    tft.setTextColor(TFT_WHITE);
     tft.setCursor(95, 30);
     tft.print(stringAngka);
 
     delay(40);
 
     if (random(0, 10) > 6) {
-      tft.fillScreen(ST77XX_BLACK);
+      tft.fillScreen(TFT_BLACK);
     }
   }
-  tft.fillScreen(ST77XX_BLACK);
+  tft.fillScreen(TFT_BLACK);
 }
-
 
 void setup() {
   Serial.begin(115200);
 
-  // Inisialisasi Layar IPS ST7789 (135x240)
-  tft.init(135, 240);
-  tft.setRotation(1); // Tegak (Portrait)
-  tft.fillScreen(ST77XX_BLACK);
+  // Inisialisasi Layar TFT_eSPI
+  tft.init();
+  tft.setRotation(1); // Tegak (Portrait ditarik jadi Landscape)
+  tft.fillScreen(TFT_BLACK);
 
   // --------------------------------------------------------
   // PROSES COOLDOWN 3 DETIK DENGAN EFEK GLITCH DI LAYAR IPS
   // --------------------------------------------------------
-  tampilkanGlitchAngka(3); // Glitch angka 3 selama 1 detik
-  tampilkanGlitchAngka(2); // Glitch angka 2 selama 1 detik
-  tampilkanGlitchAngka(1); // Glitch angka 1 selama 1 detik
+  tampilkanGlitchAngka(3); 
+  tampilkanGlitchAngka(2); 
+  tampilkanGlitchAngka(1); 
 
-  // Efek flash putih pas mau mulai (Biar kayak ledakan TV jadul)
-  tft.fillScreen(ST77XX_WHITE);
+  tft.fillScreen(TFT_WHITE);
   delay(100);
-  tft.fillScreen(ST77XX_BLACK);
-
-  // Inisialisasi LittleFS
+  tft.fillScreen(TFT_BLACK);
 
   // Konfigurasi Decoder JPEG
   TJpgDec.setJpgScale(1);
+  TJpgDec.setSwapBytes(true); // WAJIB DI TFT_eSPI: Biar warnanya gak biru jadi merah (terbalik)
   TJpgDec.setCallback(tft_output);
 }
+
 void loop() {
   uint32_t index = 0;
   
   // Mesin pencari frame video langsung dari Hex Array
   while (index < video_size - 1) {
-    // Cari header JPEG (0xFF 0xD8)
     if (video_mjpeg[index] == 0xFF && video_mjpeg[index + 1] == 0xD8) {
       uint32_t start_mcu = index;
       index += 2;
       
-      // Cari footer JPEG (0xFF 0xD9)
       while (index < video_size - 1) {
         if (video_mjpeg[index] == 0xFF && video_mjpeg[index + 1] == 0xD9) {
           uint32_t end_mcu = index + 1;
@@ -108,7 +98,8 @@ void loop() {
           // Render gambar ke layar
           TJpgDec.drawJpg(0, 0, video_mjpeg + start_mcu, frame_size);
           
-          
+          // Lompati pembacaan index agar tak mengulang iterasi yang tak perlu
+          index = end_mcu + 1;
           break; 
         }
         index++;
