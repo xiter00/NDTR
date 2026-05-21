@@ -26,11 +26,10 @@ jobs:
 
       - name: Install Libraries
         run: |
-          # Install library resmi dari Arduino Library Manager
           arduino-cli lib install "ArduinoJson"
           arduino-cli lib install "UniversalTelegramBot"
-          arduino-cli lib install "Adafruit GFX Library"
-          arduino-cli lib install "Adafruit ST7735 and ST7789 Library"
+          # Ganti Adafruit dengan TFT_eSPI
+          arduino-cli lib install "TFT_eSPI" 
           arduino-cli lib install "TJpg_Decoder"
           arduino-cli lib install "AnimatedGIF"
           
@@ -40,24 +39,51 @@ jobs:
           git clone https://github.com/me-no-dev/AsyncTCP.git
           git clone https://github.com/me-no-dev/ESPAsyncWebServer.git
         
-
+      - name: Auto Convert MJPEG to Hex & Create Custom Partition
+        run: |
+          python3 -c "
+          import os
+          file_path = 'IPS1/data/video.mjpeg'
+          if os.path.exists(file_path):
+              with open(file_path, 'rb') as f:
+                  data = f.read()
+              chunks = [', '.join([f'0x{b:02x}' for b in data[i:i+16]]) for i in range(0, len(data), 16)]
+              hex_content = ',\n'.join(chunks)
+              
+              os.makedirs('IPS1', exist_ok=True)
+              
+              # Tulis file video_data.h di dalam folder IPS1
+              with open('IPS1/video_data.h', 'w') as f:
+                  f.write('#include <pgmspace.h>\nstatic const unsigned char video_mjpeg[] PROGMEM = {\n' + hex_content + '\n};\nstatic const uint32_t video_size = ' + str(len(data)) + ';\n')
+              
+              # Bikin file partitions.csv
+              with open('IPS1/partitions.csv', 'w') as f:
+                  f.write('# Name,   Type, SubType, Offset,  Size, Flags\n')
+                  f.write('nvs,      data, nvs,     0x9000,  0x5000,\n')
+                  f.write('phy_init, data, phy,     0xe000,  0x1000,\n')
+                  f.write('app0,     app,  factory, 0x10000, 0xD00000,\n')
+                  f.write('ffat,     data, fat,     0xD10000,0x2F0000,\n')
+                  
+              print('SUKSES: video_data.h dan partitions.csv sukses dibuat di folder IPS1, Cok!')
+          else:
+              print('ERROR: File data/video.mjpeg tidak ditemukan!')
+          "
 
       - name: Compile Sketch
         run: |
-          # FQBN Standar lu digabung ama RACIKAN BEAST MODE (CPUFreq=240, FlashFreq=80, FlashMode=qio, CDCOnBoot=cdc)
-          # Ukuran partisi tetap otomatis di-override lewat file partitions.csv lu!
+          # FQBN Racikan N16R8 + Injeksi settingan layar TFT_eSPI langsung ke compiler!
+          # Mengubah target dari ./STR menjadi ./IPS1 karena script Python ditaruh disitu
           arduino-cli compile \
-            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi,CPUFreq=240,FlashMode=dio,CDCOnBoot=cdc \
+            --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi,CPUFreq=240,FlashMode=qio,FlashFreq=80,CDCOnBoot=cdc \
+            --build-property "build.partitions=partitions.csv" \
+            --build-property "compiler.cpp.extra_flags=-DUSER_SETUP_LOADED=1 -DST7789_DRIVER=1 -DTFT_WIDTH=135 -DTFT_HEIGHT=240 -DTFT_CS=10 -DTFT_DC=9 -DTFT_RST=8 -DCGRAM_OFFSET=1 -DSPI_FREQUENCY=80000000" \
             --export-binaries \
-            ./STR
-
-
-           
+            ./IPS1
 
       - name: Upload Firmware Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IPSStreamFirmware
+          name: IPSTestFirmware
           # Upload semua file .bin hasil compile
-          path: ./STR/build/**/*.bin
+          path: ./IPS1/build/**/*.bin
           retention-days: 7
