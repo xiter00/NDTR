@@ -61,7 +61,7 @@ void setup() {
 
   // Inisialisasi Layar TFT_eSPI
   tft.init();
-  tft.setRotation(1); // Tegak (Portrait ditarik jadi Landscape)
+  tft.setRotation(3); // Tegak (Portrait ditarik jadi Landscape)
   tft.fillScreen(TFT_BLACK);
 
   // --------------------------------------------------------
