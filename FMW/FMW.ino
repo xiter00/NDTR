@@ -10,7 +10,7 @@
 #define RELAY_PIN 4 // Sesuaikan dengan pin relay lo
 #define LED_BUILTIN 48 // Indikator
 
-const String BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"; 
+const String BOT_TOKEN = "8744452115:AAEjw5T6XVeOx5dqbePap6Eb8FHdI76vASs"; 
 
 // --- OBJEK GLOBAL ---
 Preferences preferences;
